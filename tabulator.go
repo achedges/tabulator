@@ -1,74 +1,71 @@
 package tabulator
 
 import (
-	"fmt"
 	"strings"
 )
-
-// Column definition
-
-type Column struct {
-	name        string
-	fieldLength int
-	padLength   int
-}
-
-func NewDefaultColumn(name string) *Column {
-	return &Column{
-		name:        name,
-		padLength:   4,
-		fieldLength: len(name),
-	}
-}
-
-func NewColumn(name string, padLength int, fieldLength int) *Column {
-	return &Column{
-		name:        name,
-		padLength:   padLength,
-		fieldLength: fieldLength,
-	}
-}
-
-func (c *Column) GetJustifiedValue(value string) string {
-	formatStr := fmt.Sprintf("%%-%ds", c.fieldLength+c.padLength)
-	return fmt.Sprintf(formatStr, value)
-}
 
 // Tabulator definition
 
 type Tabulator struct {
-	columnDefinitions []*Column
+	columns []IColumn
+	nameMap map[string]int
+	values  [][]string
+	count   int
 }
 
 func NewTabulator(columnNames ...string) *Tabulator {
 	t := &Tabulator{
-		columnDefinitions: make([]*Column, 0),
+		columns: make([]IColumn, 0),
+		nameMap: make(map[string]int),
+		values:  make([][]string, 0),
+		count:   0,
 	}
 
 	for _, name := range columnNames {
-		t.AddColumn(name)
+		t.nameMap[name] = len(t.columns)
+		t.columns = append(t.columns, NewStringColumn(name))
 	}
 
 	return t
 }
 
-func (tab *Tabulator) AddColumn(name string) {
-	tab.columnDefinitions = append(tab.columnDefinitions, NewDefaultColumn(name))
+func (tab *Tabulator) AddColumn(column IColumn) {
+	tab.nameMap[column.GetName()] = len(tab.columns)
+	tab.columns = append(tab.columns, column)
 }
 
-func (tab *Tabulator) AddColumnDefinition(column *Column) {
-	tab.columnDefinitions = append(tab.columnDefinitions, column)
+func (tab *Tabulator) AddRow() {
+	tab.values = append(tab.values, make([]string, len(tab.columns)))
+	tab.count += 1
+}
+
+func (tab *Tabulator) updateFieldLength(column int, value any) {
+	v := tab.columns[column].GetFormattedValue(value)
+	if len(v) > tab.columns[column].GetFieldLength() {
+		tab.columns[column].SetFieldLength(len(v))
+	}
+}
+
+func (tab *Tabulator) AddValueByColumnIndex(row int, column int, value any) {
+	tab.updateFieldLength(column, value)
+	tab.values[row][column] = tab.columns[column].GetFormattedValue(value)
+}
+
+func (tab *Tabulator) AddValueByColumnName(row int, column string, value any) {
+	idx := tab.nameMap[column]
+	tab.updateFieldLength(idx, value)
+	tab.values[row][idx] = tab.columns[idx].GetFormattedValue(value)
 }
 
 func (tab *Tabulator) GetTableHeader() string {
 	header := strings.Builder{}
 	header.WriteString("\n")
-	for _, col := range tab.columnDefinitions {
-		header.WriteString(col.GetJustifiedValue(col.name))
+	for _, col := range tab.columns {
+		header.WriteString(col.GetPaddedValue(col.GetName()))
 	}
 	header.WriteString("\n")
-	for _, col := range tab.columnDefinitions {
-		header.WriteString(strings.Repeat("-", col.fieldLength+col.padLength))
+	for _, col := range tab.columns {
+		header.WriteString(strings.Repeat("-", col.GetFieldLength()+col.GetPadLength()))
 	}
 
 	return header.String()
@@ -76,48 +73,44 @@ func (tab *Tabulator) GetTableHeader() string {
 
 func (tab *Tabulator) ToRow(record []string) string {
 	row := strings.Builder{}
-	for i, col := range tab.columnDefinitions {
-		row.WriteString(col.GetJustifiedValue(record[i]))
+	for i, col := range tab.columns {
+		row.WriteString(col.GetPaddedValue(record[i]))
 	}
 	return row.String()
 }
 
-func (tab *Tabulator) ToTable(records [][]string) string {
-	tab.calculateFieldLengths(records)
-
+func (tab *Tabulator) ToTable() string {
 	output := strings.Builder{}
 	output.WriteString(tab.GetTableHeader() + "\n")
 
-	if len(records) == 0 {
+	if tab.count == 0 {
 		output.WriteString("No records found\n")
 	}
 
 	// write the records to the string builder
-	for _, record := range records {
+	for _, record := range tab.values {
 		output.WriteString(tab.ToRow(record) + "\n")
 	}
 
 	return output.String()
 }
 
-func (tab *Tabulator) ToSegmentedTable(records [][]string, segmentIndex int) string {
-	tab.calculateFieldLengths(records)
-
+func (tab *Tabulator) ToSegmentedTable(segmentIndex int) string {
 	output := strings.Builder{}
 	output.WriteString(tab.GetTableHeader() + "\n")
 
-	if len(records) == 0 {
+	if tab.count == 0 {
 		output.WriteString("No records found\n")
 	}
 
 	segmentValue := ""
 	isValidSegmentation := false
-	if segmentIndex >= 0 && segmentIndex < len(records[0]) {
-		segmentValue = records[0][segmentIndex]
+	if segmentIndex >= 0 && segmentIndex < len(tab.values[0]) {
+		segmentValue = tab.values[0][segmentIndex]
 		isValidSegmentation = true
 	}
 
-	for _, record := range records {
+	for _, record := range tab.values {
 		if isValidSegmentation && record[segmentIndex] != segmentValue {
 			output.WriteString(tab.GetTableHeader() + "\n")
 			segmentValue = record[segmentIndex]
@@ -129,11 +122,11 @@ func (tab *Tabulator) ToSegmentedTable(records [][]string, segmentIndex int) str
 	return output.String()
 }
 
-func (tab *Tabulator) calculateFieldLengths(records [][]string) {
-	for _, fields := range records {
+func (tab *Tabulator) calculateFieldLengths() {
+	for _, fields := range tab.values {
 		for i := 0; i < len(fields); i++ {
-			if len(fields[i]) > tab.columnDefinitions[i].fieldLength {
-				tab.columnDefinitions[i].fieldLength = len(fields[i])
+			if len(fields[i]) > tab.columns[i].GetFieldLength() {
+				tab.columns[i].SetFieldLength(len(fields[i]))
 			}
 		}
 	}
