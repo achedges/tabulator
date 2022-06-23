@@ -81,3 +81,38 @@ func TestSegmentedTableOutput(test *testing.T) {
 		test.Errorf("Unexpected table output: %s", output)
 	}
 }
+
+func TestFixedColumnOutput(test *testing.T) {
+	tab := NewTabulator()
+	tab.AddColumn(NewFixedStringColumn("Fixed String", 16))
+	tab.AddColumn(NewFixedIntColumn("Fixed Int", 12))
+	tab.AddColumn(NewFixedFloatColumn("Fixed Float", 15))
+	tab.AddColumn(NewFixedCurrencyColumn("Fixed Currency", 17))
+	tab.AddColumn(NewFixedPercentageColumn("Fixed Percentage", 24))
+
+	tab.AddRow()
+	tab.AddValueByColumnIndex(0, 0, "Test Value 1")
+	tab.AddValueByColumnIndex(0, 1, 123)
+	tab.AddValueByColumnIndex(0, 2, 1.23)
+	tab.AddValueByColumnIndex(0, 3, 12.11)
+	tab.AddValueByColumnIndex(0, 4, 0.123)
+
+	tab.AddRow()
+	tab.AddValueByColumnIndex(1, 0, "Test Value 2")
+	tab.AddValueByColumnIndex(1, 1, 456)
+	tab.AddValueByColumnIndex(1, 2, 4.56)
+	tab.AddValueByColumnIndex(1, 3, 34.33)
+	tab.AddValueByColumnIndex(1, 4, 0.456)
+
+	output := tab.ToTable()
+	file, err := os.ReadFile("table_fixed_col_results.txt")
+	if err != nil {
+		test.Error("Unable to open table fixed column results file")
+		return
+	}
+
+	expected := string(file)
+	if output != expected {
+		test.Errorf("Unexpected table output: %s", output)
+	}
+}

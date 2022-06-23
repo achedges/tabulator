@@ -1,0 +1,5 @@
+
+Fixed String        Fixed Int       Fixed Float        Fixed Currency       Fixed Percentage            
+--------------------------------------------------------------------------------------------------------
+Test Value 1        123             1.230000           $12.11               12.30%                      
+Test Value 2        456             4.560000           $34.33               45.60%                      

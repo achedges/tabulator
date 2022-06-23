@@ -11,6 +11,8 @@ type IColumn interface {
 	SetFieldLength(length int)
 }
 
+const defaultColumnPadding = 4
+
 type column struct {
 	name        string
 	fieldLength int
@@ -37,6 +39,10 @@ func (col *column) SetFieldLength(length int) {
 
 func (col *column) GetPadLength() int {
 	return col.padLength
+}
+
+func (col *column) SetPadLength(length int) {
+	col.padLength = length
 }
 
 func (col *column) GetPaddedValue(value string) string {
@@ -68,7 +74,15 @@ func newColumn(name string) column {
 	return column{
 		name:        name,
 		fieldLength: len(name),
-		padLength:   4,
+		padLength:   defaultColumnPadding,
+	}
+}
+
+func newFixedColumn(name string, fieldLength int) column {
+	return column{
+		name:        name,
+		fieldLength: fieldLength,
+		padLength:   defaultColumnPadding,
 	}
 }
 
@@ -76,18 +90,38 @@ func NewStringColumn(name string) IColumn {
 	return &StringColumn{newColumn(name)}
 }
 
+func NewFixedStringColumn(name string, fieldLength int) IColumn {
+	return &StringColumn{newFixedColumn(name, fieldLength)}
+}
+
 func NewIntColumn(name string) IColumn {
 	return &IntColumn{newColumn(name)}
+}
+
+func NewFixedIntColumn(name string, fieldLength int) IColumn {
+	return &IntColumn{newFixedColumn(name, fieldLength)}
 }
 
 func NewFloatColumn(name string) IColumn {
 	return &FloatColumn{newColumn(name)}
 }
 
+func NewFixedFloatColumn(name string, fieldLength int) IColumn {
+	return &FloatColumn{newFixedColumn(name, fieldLength)}
+}
+
 func NewCurrencyColumn(name string) IColumn {
 	return &CurrencyColumn{newColumn(name)}
 }
 
+func NewFixedCurrencyColumn(name string, fieldLength int) IColumn {
+	return &CurrencyColumn{newFixedColumn(name, fieldLength)}
+}
+
 func NewPercentageColumn(name string) IColumn {
 	return &PercentageColumn{newColumn(name)}
+}
+
+func NewFixedPercentageColumn(name string, fieldLength int) IColumn {
+	return &PercentageColumn{newFixedColumn(name, fieldLength)}
 }
