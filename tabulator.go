@@ -79,6 +79,10 @@ func (tab *Tabulator) ToRow(record []string) string {
 	return row.String()
 }
 
+func (tab *Tabulator) ToRowByRowNumber(rowNumber int) string {
+	return tab.ToRow(tab.values[rowNumber])
+}
+
 func (tab *Tabulator) ToTable() string {
 	output := strings.Builder{}
 	output.WriteString(tab.GetTableHeader() + "\n")

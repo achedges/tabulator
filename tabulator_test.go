@@ -19,8 +19,8 @@ func TestTableOutput(test *testing.T) {
 
 	records := [][]string{
 		{"Field 1", "Field 2", "Field 3"},
-		{"Field 1", "Field 2", "Field 3"},
-		{"Field 1", "Field 2", "Field 3"},
+		{"Field 4", "Field 5", "Field 6"},
+		{"Field 7", "Field 8", "Field 9"},
 	}
 
 	for i, r := range records {
@@ -40,6 +40,11 @@ func TestTableOutput(test *testing.T) {
 	expected := string(file)
 	if output != expected {
 		test.Errorf("Unexpected table output: %s", output)
+	}
+
+	singleRecord := tab.ToRowByRowNumber(1)
+	if singleRecord != "Field 4     Field 5     Field 6     " {
+		test.Errorf("Unexpected single record output: %s", singleRecord)
 	}
 }
 
